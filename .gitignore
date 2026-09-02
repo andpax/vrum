@@ -220,6 +220,7 @@ __marimo__/
 # VRUM — dados e artefatos grandes (não commitar)
 # CSVs brutos ficam em notebooks/docs/ (~400MB); artefatos em output/ (~500MB).
 # .gitkeep mantém os diretórios vazios no repo.
+docs/*.csv
 notebooks/docs/*
 !notebooks/docs/.gitkeep
 notebooks/output/*
