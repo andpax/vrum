@@ -199,7 +199,7 @@ cython_debug/
 #   that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
 #   and can be added to the global gitignore or merged into this file. However, if you prefer, 
 #   you could uncomment the following to ignore the entire vscode folder
-# .vscode/
+.vscode/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
@@ -216,3 +216,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# VRUM — dados e artefatos grandes (não commitar)
+# CSVs brutos ficam em notebooks/docs/ (~400MB); artefatos em output/ (~500MB).
+# .gitkeep mantém os diretórios vazios no repo.
+notebooks/docs/*
+!notebooks/docs/.gitkeep
+notebooks/output/*
+!notebooks/output/.gitkeep
+output/*
+!output/.gitkeep
+data/*
+!data/.gitkeep
