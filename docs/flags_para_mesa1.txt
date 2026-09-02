@@ -1,0 +1,62 @@
+Flags para enviar à mesa
+- flag_indice_rotatividade_alto
+- indice_rotatividade_vrum >= P95_treino
+- flag_frequencia_alta
+- transferências acima do limite em 7, 15, 30 ou 45 dias
+- flag_intervalo_curto
+- dias_desde_ultima_proposta <= 5
+- flag_posse_historica_curta
+- tempo_posse_mediano_acumulado baixo
+- flag_alternancia_pf_pj
+- flag_alternancia_pf_pj == 1
+- flag_muitos_proponentes
+- vários proponentes no mesmo chassi
+- flag_muitas_ifs
+- propostas em várias IFs
+- flag_mudanca_canal
+- alternância entre digital, concessionária e loja
+- flag_mudanca_uf
+- sequência de UFs incompatível com histórico
+- flag_historico_insuficiente
+- poucas propostas anteriores para confiar no índice
+Prioridade financeira
+- flag_exposicao_alta
+- valor_financiado >= P90_treino
+- flag_ltv_alto
+- ltv_fipe >= P90_treino
+- flag_exposicao_e_ltv_altos
+- priorização máxima, não prova de fraude
+Regra de encaminhamento
+sinais = (
+    flag_indice_alto
+    + flag_frequencia_alta
+    + flag_intervalo_curto
+    + flag_alternancia_pf_pj
+    + flag_muitos_proponentes
+    + flag_muitas_ifs
+)
+
+if historico_insuficiente and exposicao_alta:
+    zona = "INVESTIGAR"
+
+elif sinais >= 2:
+    zona = "INVESTIGAR"
+
+elif score_modelo >= limiar_investigar:
+    zona = "INVESTIGAR"
+
+else:
+    zona = "APROVAR"
+Ordenação da fila
+prioridade =
+quantidade_de_sinais
++ exposição alta
++ LTV alto
++ score_modelo
+Não enviar como evidência
+- target_risco_90d
+- evento_risco_chassi_90d
+- tipo_evento
+- dias_ate_evento
+- dt_evento
+Esses campos representam resultado futuro e causariam leakage. No dataset atual, flags devem orientar investigação, não bloqueio automático.
