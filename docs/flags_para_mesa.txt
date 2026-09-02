@@ -1,0 +1,132 @@
+VRUM - FLAGS PARA ENVIO A MESA DE ANALISE
+
+Objetivo
+--------
+Usar sinais historicos e financeiros para priorizar analise manual. As flags
+nao comprovam fraude e nao devem gerar bloqueio automatico sem validacao OOT,
+juridica e operacional.
+
+FLAGS COMPORTAMENTAIS
+---------------------
+
+flag_indice_rotatividade_alto
+Verdadeiro quando indice_rotatividade_vrum estiver acima do P95 calculado
+somente na base de treino.
+
+flag_frequencia_alta
+Verdadeiro quando a quantidade de propostas anteriores ultrapassar o limite
+operacional definido em qualquer janela de 7, 15, 30 ou 45 dias.
+
+flag_intervalo_curto
+Verdadeiro quando dias_desde_ultima_proposta for menor ou igual a 5 dias.
+
+flag_posse_historica_curta
+Verdadeiro quando tempo_posse_mediano_acumulado estiver abaixo do limite
+definido no treino. O limite deve ser documentado e mantido fixo no OOT.
+
+flag_alternancia_pf_pj
+Verdadeiro quando houver troca entre pessoa fisica e pessoa juridica na
+sequencia historica do mesmo chassi.
+
+flag_muitos_proponentes
+Verdadeiro quando o mesmo chassi tiver quantidade elevada de proponentes
+distintos em janela historica de 45 ou 90 dias.
+
+flag_muitas_ifs
+Verdadeiro quando o mesmo chassi aparecer em quantidade elevada de instituicoes
+financeiras distintas em janela historica de 45 ou 90 dias.
+
+flag_mudanca_canal
+Verdadeiro quando houver alternancia relevante entre DIGITAL,
+CONCESSIONARIA e LOJA_MULTIMARCA na cadeia do chassi.
+
+flag_mudanca_uf
+Verdadeiro quando houver mudanca de UF entre propostas consecutivas ou dentro
+da janela historica definida.
+
+flag_historico_insuficiente
+Verdadeiro quando houver menos de 2 propostas historicas validas. Indice alto
+com historico insuficiente deve gerar cautela, nao bloqueio.
+
+FLAGS FINANCEIRAS
+-----------------
+
+flag_exposicao_alta
+Verdadeiro quando valor_financiado estiver acima do P90 calculado somente no
+treino. Serve para priorizar impacto financeiro, nao para provar fraude.
+
+flag_ltv_alto
+Verdadeiro quando ltv_fipe estiver acima do P90 calculado somente no treino.
+LTV alto indica menor margem entre financiamento e valor de referencia do
+veiculo.
+
+flag_exposicao_e_ltv_altos
+Verdadeiro quando flag_exposicao_alta e flag_ltv_alto forem verdadeiras.
+Indica prioridade financeira maxima para a mesa.
+
+COMPOSICAO DA PRIORIDADE
+------------------------
+
+qtd_sinais_mesa = soma das flags comportamentais verdadeiras.
+
+Regra inicial:
+
+1. Historico insuficiente e exposicao alta: INVESTIGAR.
+2. Dois ou mais sinais comportamentais: INVESTIGAR.
+3. Score do modelo acima do limiar de investigacao: INVESTIGAR.
+4. Exposicao e LTV altos aumentam prioridade dentro da fila.
+5. Ausencia de sinal: APROVAR provisoriamente.
+
+POLITICA DE ZONAS
+-----------------
+
+APROVAR
+Fluxo direto. Manter monitoramento para propostas de alta exposicao.
+
+INVESTIGAR
+Enviar para mesa manual. Exibir flags acionadas, historico do chassi, score,
+indice de rotatividade, LTV e valor financiado.
+
+BLOQUEAR
+Manter desabilitado enquanto o modelo nao demonstrar desempenho superior ao
+baseline no OOT. Habilitar somente com regra independente, evidencias reais,
+aprovacao juridica e controle de falso positivo.
+
+ORDEM DA FILA
+-------------
+
+1. Maior quantidade de sinais comportamentais.
+2. flag_exposicao_e_ltv_altos.
+3. Maior valor_financiado.
+4. Maior ltv_fipe.
+5. Maior score_modelo.
+
+EXCLUIR DA DECISAO
+------------------
+
+Nao usar como feature ou flag de decisao:
+
+- target_risco_90d
+- evento_risco_chassi_90d
+- tipo_evento
+- dias_ate_evento
+- dt_evento
+
+Esses campos representam o resultado futuro e causam vazamento de informacao.
+
+MONITORAMENTO
+-------------
+
+Medir por safra e por IF:
+
+- taxa de aprovacao, investigacao e bloqueio;
+- captura de risco;
+- falso positivo;
+- tempo e custo da mesa;
+- exposicao financiada encaminhada;
+- perda evitada confirmada;
+- drift das flags, LTV e score;
+- AUC, KS e PR-AUC apos maturacao do target.
+
+Nota: o dataset atual apresentou AUC OOT proxima de 0,5. As flags devem ser
+usadas para triagem e coleta de evidencia, nao como prova de fraude.
