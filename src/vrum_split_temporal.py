@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 
 def generate_mock_data(num_rows=100000):
     """
-    Gera uma base de dados fictícia para simular a estrutura do desafio VRUM.
-    Útil para testar o pipeline sem estourar a memória RAM.
+    Gera uma base estrutural fictícia para testar o split e o consumo de memória.
+    O target aleatório não serve para avaliar desempenho antifraude.
     """
     print(f"Gerando {num_rows:,} linhas de dados simulados...")
     np.random.seed(42)
@@ -13,7 +13,7 @@ def generate_mock_data(num_rows=100000):
     # Criar datas entre 01/01/2026 e 31/03/2026
     start_date = datetime(2026, 1, 1)
     end_date = datetime(2026, 3, 31)
-    delta_days = (end_date - start_date).days
+    delta_days = (end_date - start_date).days + 1
     
     random_days = np.random.randint(0, delta_days, size=num_rows)
     random_seconds = np.random.randint(0, 86400, size=num_rows)
@@ -25,7 +25,7 @@ def generate_mock_data(num_rows=100000):
     proponentes = [f"PROP_{np.random.randint(50000, 150000)}" for _ in range(num_rows)]
     valores = np.random.uniform(20000, 150000, size=num_rows)
     
-    # Target simulado (ex: taxa de fraude de 2%)
+    # Target aleatório apenas para testar o pipeline estrutural.
     is_fraud = np.random.choice([0, 1], size=num_rows, p=[0.98, 0.02])
     
     df = pd.DataFrame({
@@ -66,30 +66,30 @@ def optimize_memory(df):
 
 def apply_temporal_split(df, date_col='timestamp_proposta'):
     """
-    Executa o Split Temporal Estrito de 45 dias conforme sugerido pelo mentor Victor Acioli.
+    Executa split temporal estrito em blocos consecutivos de 30 dias.
     Evita vazamento de dados (Data Leakage) simulando o ambiente real de produção.
     
-    Base de dados total: 01/01/2026 a 31/03/2026 (~90 dias)
-    - Bloco 1 (Modelagem): Propostas do dia 01/01 a 14/02 (~45 dias). 
-      -> Possui janela de 45 dias completa até o fim da base (31/03) para observar o desfecho.
-    - Bloco 2 (Produção/Out-of-Time): Propostas de 15/02 a 31/03 (~45 dias).
+    Base de dados total: 01/01/2026 a 31/03/2026 (~90 dias).
+    - Treino: [início, início + 30 dias).
+    - Validação: [início + 30 dias, início + 60 dias).
+    - Out-of-time: [início + 60 dias, fim].
     """
-    print("\nAplicando divisão temporal de 45 dias...")
+    print("\nAplicando divisão temporal de 30 dias...")
     
     # Garantir ordenação cronológica
     df = df.sort_values(by=date_col).reset_index(drop=True)
     
     # Definir os marcos temporais
     inicio_treino = df[date_col].min()
-    fim_treino = inicio_treino + timedelta(days=30)  # Janeiro inteiro (~31 dias)
-    fim_bloco_modelagem = inicio_treino + timedelta(days=45) # 45 dias totais (01/01 a 14/02)
+    marco_30 = inicio_treino + timedelta(days=30)
+    marco_60 = inicio_treino + timedelta(days=60)
     
     print(f"Período total dos dados: {inicio_treino.strftime('%d/%m/%Y')} até {df[date_col].max().strftime('%d/%m/%Y')}")
     
     # Criar as máscaras temporais
-    mask_treino = (df[date_col] >= inicio_treino) & (df[date_col] <= fim_treino)
-    mask_validacao = (df[date_col] > fim_treino) & (df[date_col] <= fim_bloco_modelagem)
-    mask_oot = (df[date_col] > fim_bloco_modelagem)
+    mask_treino = (df[date_col] >= inicio_treino) & (df[date_col] < marco_30)
+    mask_validacao = (df[date_col] >= marco_30) & (df[date_col] < marco_60)
+    mask_oot = (df[date_col] >= marco_60)
     
     # Split das bases
     train_df = df[mask_treino].copy()
@@ -102,9 +102,9 @@ def apply_temporal_split(df, date_col='timestamp_proposta'):
     df.loc[mask_validacao, 'split_group'] = 'Validation_Set'
     
     print("\nResultados do Split Temporal:")
-    print(f" - [TREINO]      {inicio_treino.strftime('%d/%m/%Y')} a {fim_treino.strftime('%d/%m/%Y')} | Linhas: {len(train_df):,} ({len(train_df)/len(df)*100:.1f}%)")
-    print(f" - [VALIDAÇÃO]   {(fim_treino + timedelta(days=1)).strftime('%d/%m/%Y')} a {fim_bloco_modelagem.strftime('%d/%m/%Y')} | Linhas: {len(val_df):,} ({len(val_df)/len(df)*100:.1f}%)")
-    print(f" - [OUT-OF-TIME] {(fim_bloco_modelagem + timedelta(days=1)).strftime('%d/%m/%Y')} a {df[date_col].max().strftime('%d/%m/%Y')} | Linhas: {len(oot_df):,} ({len(oot_df)/len(df)*100:.1f}%)")
+    print(f" - [TREINO]      {inicio_treino.strftime('%d/%m/%Y')} a {(marco_30 - timedelta(seconds=1)).strftime('%d/%m/%Y')} | Linhas: {len(train_df):,} ({len(train_df)/len(df)*100:.1f}%)")
+    print(f" - [VALIDAÇÃO]   {marco_30.strftime('%d/%m/%Y')} a {(marco_60 - timedelta(seconds=1)).strftime('%d/%m/%Y')} | Linhas: {len(val_df):,} ({len(val_df)/len(df)*100:.1f}%)")
+    print(f" - [OUT-OF-TIME] {marco_60.strftime('%d/%m/%Y')} a {df[date_col].max().strftime('%d/%m/%Y')} | Linhas: {len(oot_df):,} ({len(oot_df)/len(df)*100:.1f}%)")
     
     return train_df, val_df, oot_df, df
 
@@ -116,7 +116,7 @@ if __name__ == "__main__":
     # 2. Otimizar uso de RAM
     optimized_data = optimize_memory(raw_data)
     
-    # 3. Aplicar o Split Temporal Estrito de 45 dias
+    # 3. Aplicar o split temporal estrito de 30 dias
     train, validation, oot, df_completo = apply_temporal_split(optimized_data)
     
     print("\n[VRUM] Estrutura do split pronta com sucesso!")

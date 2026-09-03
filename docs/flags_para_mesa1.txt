@@ -28,9 +28,10 @@ Prioridade financeira
 - priorização máxima, não prova de fraude
 Regra de encaminhamento
 sinais = (
-    flag_indice_alto
+    flag_indice_rotatividade_alto
     + flag_frequencia_alta
     + flag_intervalo_curto
+    + flag_posse_historica_curta
     + flag_alternancia_pf_pj
     + flag_muitos_proponentes
     + flag_muitas_ifs
