@@ -9,13 +9,22 @@ import polars as pl
 from sklearn.metrics import average_precision_score, roc_auc_score
 from xgboost import XGBClassifier
 
-from modelo_xgboost import (
-    TARGET,
-    construir_features,
-    carregar_base,
-    preparar_modelagem,
-    split_temporal_30_dias,
-)
+try:
+    from .modelo_xgboost import (
+        TARGET,
+        construir_features,
+        carregar_base,
+        preparar_modelagem,
+        split_temporal_30_dias,
+    )
+except ImportError:
+    from modelo_xgboost import (
+        TARGET,
+        construir_features,
+        carregar_base,
+        preparar_modelagem,
+        split_temporal_30_dias,
+    )
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -24,6 +33,7 @@ MODEL_PATH = OUTPUT_DIR / "modelo_xgboost_vrum.json"
 
 
 def pontuar_splits(base: pl.DataFrame) -> tuple[pl.DataFrame, float, float]:
+    base = base.filter(pl.col("target_observado") == 1)
     treino, validacao, oot = split_temporal_30_dias(base)
     treino_modelo, features, categorias = preparar_modelagem(treino)
     validacao_modelo, _, _ = preparar_modelagem(validacao, categorias)

@@ -20,6 +20,7 @@ from xgboost import XGBClassifier
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 INPUT_PATH = REPO_ROOT / "output" / "vrum_timeline_completa.csv"
+EVENTS_PATH = REPO_ROOT / "docs" / "eventos_target_chassi_90d.csv"
 OUTPUT_DIR = REPO_ROOT / "output"
 
 TARGET = "target_risco_90d"
@@ -28,6 +29,7 @@ FEATURES_NUMERICOS = [
     "valor_entrada",
     "prazo_meses",
     "dias_desde_ultima_proposta",
+    "qtd_propostas_historicas",
     "tempo_posse_mediano_acumulado",
     "transferencias_ultimos_7d",
     "transferencias_ultimos_15d",
@@ -40,8 +42,28 @@ FEATURES_NUMERICOS = [
 FEATURES_CATEGORICOS = ["tipo_proponente", "canal", "uf_proposta"]
 
 
-def carregar_base(caminho: Path = INPUT_PATH) -> pl.DataFrame:
-    """Lê propostas e liga target pela linha de evento de risco correspondente."""
+def anexar_target_observado(
+    propostas: pl.DataFrame, eventos: pl.DataFrame
+) -> pl.DataFrame:
+    """Liga target e preserva propostas sem registro de evento como não observadas."""
+    rotulos = eventos.select(
+        ["id_proposta", "evento_risco_chassi_90d", "tipo_evento"]
+    ).unique("id_proposta")
+    return propostas.join(rotulos, on="id_proposta", how="left").with_columns(
+        [
+            pl.col("evento_risco_chassi_90d").alias(TARGET),
+            pl.col("evento_risco_chassi_90d")
+            .is_not_null()
+            .cast(pl.Int8)
+            .alias("target_observado"),
+        ]
+    )
+
+
+def carregar_base(
+    caminho: Path = INPUT_PATH, caminho_eventos: Path = EVENTS_PATH
+) -> pl.DataFrame:
+    """Lê propostas e target original; não infere ausência de evento como zero."""
     timeline = pl.read_csv(
         caminho,
         separator=";",
@@ -72,15 +94,18 @@ def carregar_base(caminho: Path = INPUT_PATH) -> pl.DataFrame:
         )
         .sort(["chassi_id_sintetico", "data_hora_proposta", "id_proposta"])
     )
-    eventos = timeline.filter(pl.col("origem_registro") == "EVENTO_RISCO").select(
-        "id_proposta"
-    ).unique()
-
-    return propostas.join(
-        eventos.with_columns(pl.lit(1).cast(pl.Int8).alias(TARGET)),
-        on="id_proposta",
-        how="left",
-    ).with_columns(pl.col(TARGET).fill_null(0).cast(pl.Int8))
+    if not caminho_eventos.exists():
+        raise FileNotFoundError(
+            f"Fonte original do target não encontrada: {caminho_eventos}"
+        )
+    eventos = pl.read_csv(
+        caminho_eventos,
+        separator=";",
+        null_values=[""],
+        try_parse_dates=False,
+        infer_schema_length=10_000,
+    )
+    return anexar_target_observado(propostas, eventos)
 
 
 def adicionar_janela(df: pl.DataFrame, dias: int) -> pl.DataFrame:
@@ -88,6 +113,7 @@ def adicionar_janela(df: pl.DataFrame, dias: int) -> pl.DataFrame:
     nome = f"transferencias_ultimos_{dias}d"
     janela = (
         df.select(["chassi_id_sintetico", "data_hora_proposta"])
+        .sort(["chassi_id_sintetico", "data_hora_proposta"])
         .rolling(
             index_column="data_hora_proposta",
             period=f"{dias}d",
@@ -97,7 +123,9 @@ def adicionar_janela(df: pl.DataFrame, dias: int) -> pl.DataFrame:
         .agg(pl.col("data_hora_proposta").count().alias(nome))
         .unique(["chassi_id_sintetico", "data_hora_proposta"])
     )
-    return df.join(janela, on=["chassi_id_sintetico", "data_hora_proposta"])
+    return df.join(janela, on=["chassi_id_sintetico", "data_hora_proposta"]).sort(
+        ["chassi_id_sintetico", "data_hora_proposta", "id_proposta"]
+    )
 
 
 def construir_features(df: pl.DataFrame) -> pl.DataFrame:
@@ -123,6 +151,11 @@ def construir_features(df: pl.DataFrame) -> pl.DataFrame:
         )
         .cast(pl.Int8)
         .alias("flag_alternancia_pf_pj")
+    )
+    df = df.with_columns(
+        (pl.col("id_proposta").cum_count().over("chassi_id_sintetico") - 1).alias(
+            "qtd_propostas_historicas"
+        )
     )
     df = df.with_columns(
         pl.col("tempo_posse_dias")
@@ -190,6 +223,8 @@ def ks_statistic(y_true: np.ndarray, score: np.ndarray) -> float:
 
 def escolher_limiar(y_true: np.ndarray, score: np.ndarray) -> float:
     precision, recall, thresholds = precision_recall_curve(y_true, score)
+    if thresholds.size == 0:
+        raise ValueError("Não foi possível escolher limiar: scores sem variação")
     f1 = 2 * precision[:-1] * recall[:-1] / (precision[:-1] + recall[:-1] + 1e-12)
     return float(thresholds[int(np.argmax(f1))])
 
@@ -214,6 +249,7 @@ def avaliar(
 
 def main() -> None:
     base = construir_features(carregar_base())
+    base = base.filter(pl.col("target_observado") == 1)
     treino, validacao, oot = split_temporal_30_dias(base)
     treino, features, categorias = preparar_modelagem(treino)
     validacao, _, _ = preparar_modelagem(validacao, categorias)
