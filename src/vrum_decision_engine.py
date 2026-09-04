@@ -1,4 +1,21 @@
-"""Motor de decisão operacional das propostas VRUM."""
+"""Motor de decisão operacional das propostas VRUM.
+
+Aplica flags comportamentais/financeiras e zona de decisão (APROVAR /
+INVESTIGAR) sobre um DataFrame já enriquecido com features históricas.
+Limites (P90/P95) são calculados SOMENTE nas linhas de treino para evitar
+leakage; BLOQUEAR permanece desabilitado por política (ver
+docs/flags_para_mesa.txt).
+
+Contrato de entrada (colunas em REQUIRED_COLUMNS, mais uma de split):
+  - features históricas: geradas por src/modelo_xgboost.py::construir_features
+    (atenção: `tipo_proponente_anterior` é dropada lá; recriá-la ou montar o
+    DataFrame via notebook se for usar este motor fora dos testes)
+  - `ltv_fipe`: valor_financiado / valor_fipe_referencia (presente no notebook
+    notebooks/processo_completo_vrum.ipynb; não é gerada pelo pipeline src)
+  - coluna de split: `split_group` (Train_Set/Validation_Set/OOT_Production)
+    ou `safra` (treino/validacao/oot)
+  - opcional: `score_modelo` (saída de src/politica_operacional_vrum.py)
+"""
 
 from __future__ import annotations
 

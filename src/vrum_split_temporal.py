@@ -1,3 +1,12 @@
+"""Split temporal demonstrativo do VRUM (dados simulados).
+
+Protótipo didático: gera base mock, otimiza memória e demonstra o split em
+blocos consecutivos de 30 dias. O split usado de fato no pipeline vive em
+src/modelo_xgboost.py::split_temporal_30_dias (mesma janela, dados reais).
+
+Execução: `python src/vrum_split_temporal.py`
+"""
+
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta

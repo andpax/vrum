@@ -2,30 +2,30 @@
 Verificação de Risco e Uso de Motores
 
 > **Acelerando decisões seguras através da reconstrução cronológica da vida do chassi.**
- 
-[![Status](https://img.shields.io/badge/status-planejamento-yellow)]()
-[![Stack](https://img.shields.io/badge/stack-Python%20%7C%20LLM%20%2F%20RAG-blue)]()
-[![Projeto](https://img.shields.io/badge/tipo-acad%C3%AAmico-lightgrey)]()
- 
----
- 
-## 📌 Sobre o projeto
-Analisar dados históricos para interpretar a história da propriedade de veículos financiados em busca de padrões de negociação, por meio do CHASSI do veículo, para identificar possíveis tentativas de fraude em uma transação. Para isso, precisamos é transformar a linha do tempo bruta de propriedade de cada chassi em indicadores explicáveis.
 
-## Quais os desafisos?
+[![Status](https://img.shields.io/badge/status-funcional-green)]()
+[![Stack](https://img.shields.io/badge/stack-Python%20%7C%20pandas%20%2F%20polars%20%7C%20XGBoost-blue)]()
+[![Projeto](https://img.shields.io/badge/tipo-acad%C3%AAmico-lightgrey)]()
+
+---
+
+## 📌 Sobre o projeto
+Analisar dados históricos para interpretar a história da propriedade de veículos financiados em busca de padrões de negociação, por meio do CHASSI do veículo, para identificar possíveis tentativas de fraude em uma transação. Para isso, transformamos a linha do tempo bruta de propriedade de cada chassi em indicadores explicáveis.
+
+## Quais os desafios?
 ### **Aprovar rápido** para não prejudicar a conversão e a experiência do cliente.
 
 - Grupos criminosos se aproveitam do interesse em rápida aprovação das financiadoras para passarem **dados falsos de compradores com bom score.**
-- Algumas fraudes podem incluir uma rápida troca posse do veículo, o que gera muitos contratos para analisar e pode deixar o processo lento e criar um **desafio entre segurança e velocidade de aprovação.**
-- A falta de critérios refinados **pode gerar falsos positivos**, que é o pior cenário para esse tipod e análise
+- Algumas fraudes podem incluir uma rápida troca de posse do veículo, o que gera muitos contratos para analisar e pode deixar o processo lento e criar um **desafio entre segurança e velocidade de aprovação.**
+- A falta de critérios refinados **pode gerar falsos positivos**, que é o pior cenário para esse tipo de análise.
 
 ### **Manter a segurança** para não financiar um ativo com histórico de propriedade manipulado.
 
-- Evitar falsos positivos à todo custo para evitar impacto financeiro, judicial e da imagem da financiadora para o mercado.
+- Evitar falsos positivos a todo custo para evitar impacto financeiro, judicial e de imagem da financiadora no mercado.
 
 ### **Operar com eficiência** para não sobrecarregar mesas de análise manual.
 
-- Sobrecarregar a análise manual significa perda financeira em 2 viéses: Aprovação lenta (potencialmente perder clientes) e muito tempo dedicado a análises complexas e morosas para ser feita caso à caso (gasto com salário dos funcionários)
+- Sobrecarregar a análise manual significa perda financeira em 2 vieses: aprovação lenta (potencialmente perder clientes) e muito tempo dedicado a análises complexas e morosas caso a caso (gasto com salário dos funcionários).
 
 ## Qual o ponto de partida?
 Transferências sucessivas de chassi podem antecipar o financiamento e dificultar a recuperação do ativo em caso de inadimplência ou fraude. O risco potencial está na combinação de **velocidade**, **sequência**, **permanência**, **tipo de proprietário** e **histórico financeiro** — e dificilmente aparece de forma explícita em um único evento isolado:
@@ -67,6 +67,49 @@ Transferências sucessivas de chassi podem antecipar o financiamento e dificulta
 - Avaliar com métricas técnicas: AUC, KS, Precision, Recall e PR-AUC
 - Comparar abordagem de score puro vs. score + indicadores híbridos
 
-### Dashboard
+### **Política operacional**
 
-- **Perfil de Propriedade,** Padrões de Aquisição e comportamento. Suspeitos x Legítimos
+- Zonas de decisão APROVAR / INVESTIGAR / BLOQUEAR com limites calibrados só no treino
+- Flags explicáveis para priorização da mesa de análise (ver `docs/flags_para_mesa.txt`)
+- Estabilidade por safra e por instituição financeira (drift)
+
+## Pipeline (ordem de execução)
+
+```
+docs/*.csv  →  src/montagem_inicial.py  →  src/modelo_xgboost.py  →  src/politica_operacional_vrum.py
+              (timeline + features)       (split 30d + XGBoost)      (zonas + estabilidade)
+```
+
+Scripts de apoio (fora do pipeline principal):
+- `src/ordenacao_cronologica_chassi.py` — entregável de ordenação cronológica canônica (timeline long + JSON por chassi + sumário)
+- `src/pipeline_eventos.py` — EDA de sanidade das bases
+- `src/vrum_split_temporal.py` — split temporal demonstrativo com dados simulados
+- `src/vrum_decision_engine.py` — motor de flags/zona em pandas (contrato de entrada na docstring)
+
+Manual completo de uso: [`docs/manual_uso_vrum.md`](docs/manual_uso_vrum.md).
+
+## Instalação e execução
+
+```bash
+conda create -n vrum python=3.12 -y
+conda run -n vrum pip install -r requirements.txt
+
+# 1. Timeline + features (gera output/vrum_timeline_completa.csv)
+python src/montagem_inicial.py
+
+# 2. Modelo (gera output/modelo_xgboost_vrum.json + métricas)
+python src/modelo_xgboost.py
+
+# 3. Política operacional (gera output/politica_zonas_vrum.csv)
+python src/politica_operacional_vrum.py
+
+# Testes
+python -m unittest discover -s tests
+```
+
+Dados brutos (5 CSVs, ~400MB) ficam em `docs/` e não são commitados (ver `.gitignore`).
+
+## Trabalho futuro
+
+- **Camada LLM/RAG** (LangChain, ChromaDB, sentence-transformers): consulta conversacional da linha do tempo de um chassi para a mesa de análise. Ainda não implementada; arquitetura prevista como camada de leitura sobre os artefatos de `output/`.
+- Dashboard "Perfil de Propriedade" (suspeitos x legítimos) em `dashboard/`.
