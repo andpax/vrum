@@ -32,17 +32,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from vrum_io import DATA_DIR, OUTPUT_DIR, SEP, carregar_bases
+
 # --------------------------------------------------------------------------- #
 # 0. CONFIGURAÇÃO
 # --------------------------------------------------------------------------- #
-REPO_ROOT = Path(__file__).resolve().parent.parent
-# CSVs brutos vivem em notebooks/docs/ (data/ está vazio).
-DATA_DIR = Path("/var/home/andpax/Workspace/projetos/vscode-workspace/vrum/notebooks/docs")
-OUTPUT_DIR = REPO_ROOT / "output"
-OUTPUT_DIR.mkdir(exist_ok=True)
-
-SEP = ";"
-ENC = "utf-8-sig"
 
 # Janela plausível (conforme inspeção: propostas jan-mar/2026; risco até +90d).
 JANELA_INICIO = pd.Timestamp("2026-01-01")
@@ -59,28 +53,7 @@ PRIORIDADE_TIPO = {
 
 
 # --------------------------------------------------------------------------- #
-# 1. CARGA E PADRONIZAÇÃO
-# --------------------------------------------------------------------------- #
-def ler_csv(caminho: Path) -> pd.DataFrame:
-    return pd.read_csv(caminho, encoding=ENC, sep=SEP)
-
-
-def padronizar_colunas(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    df.columns = (
-        df.columns.str.replace("\ufeff", "", regex=False).str.strip().str.lower()
-    )
-    return df
-
-
-def limpar_chave(df: pd.DataFrame, coluna: str) -> pd.DataFrame:
-    df = df.copy()
-    df[coluna] = df[coluna].astype("string").str.strip()
-    return df
-
-
-# --------------------------------------------------------------------------- #
-# 2. CONSTRUÇÃO DOS EVENTOS
+# 1. CONSTRUÇÃO DOS EVENTOS
 # --------------------------------------------------------------------------- #
 def construir_eventos_proposta(
     df_fin: pd.DataFrame, df_cad: pd.DataFrame
@@ -140,7 +113,6 @@ def construir_eventos_risco(
     risco["subtipo_evento"] = risco["tipo_evento"]  # FRAUDE_CONFIRMADA / NEVER_PAY / ...
     risco["origem_registro"] = "EVENTO_RISCO"
     risco["prioridade_tipo"] = PRIORIDADE_TIPO["EVENTO_RISCO"]
-    risco["dt_evento"] = risco["dt_evento"]  # pode ser NaT se dt_proposta ou dias ausente
     return risco
 
 
@@ -192,7 +164,7 @@ def consolidar_timeline(
 
 
 # --------------------------------------------------------------------------- #
-# 3. ENRIQUECIMENTO + ATRIBUTOS DA PROPOSTA
+# 2. ENRIQUECIMENTO + ATRIBUTOS DA PROPOSTA
 # --------------------------------------------------------------------------- #
 def anexar_atributos_proposta(
     tl: pd.DataFrame, eventos_proposta: pd.DataFrame, eventos_risco: pd.DataFrame
@@ -238,7 +210,7 @@ def anexar_atributos_proposta(
 
 
 # --------------------------------------------------------------------------- #
-# 4. SAÍDA ESTRUTURADA (DataFrame + JSON por chassi + sumário)
+# 3. SAÍDA ESTRUTURADA (DataFrame + JSON por chassi + sumário)
 # --------------------------------------------------------------------------- #
 def gerar_json_linha_do_tempo(tl: pd.DataFrame, caminho: Path, limite_chassis: int | None = None) -> None:
     """Serializa a linha do tempo por chassi em JSON.
@@ -314,30 +286,14 @@ def gerar_sumario_chassi(tl: pd.DataFrame, df_cad: pd.DataFrame) -> pd.DataFrame
 
 
 # --------------------------------------------------------------------------- #
-# 5. PIPELINE PRINCIPAL
+# 4. PIPELINE PRINCIPAL
 # --------------------------------------------------------------------------- #
 def main() -> None:
     print("== VRUM: ordenação cronológica por chassi ==")
 
     # Carga
     print("[1/5] Carga dos 5 CSVs...")
-    df_cad = padronizar_colunas(ler_csv(DATA_DIR / "cadastro_chassi_mock.csv"))
-    df_fin = pd.concat(
-        [
-            padronizar_colunas(ler_csv(DATA_DIR / f"financiamentos_chassi_2026_{i:02d}.csv"))
-            for i in (1, 2, 3)
-        ],
-        ignore_index=True,
-    )
-    df_ev = padronizar_colunas(ler_csv(DATA_DIR / "eventos_target_chassi_90d.csv"))
-
-    for df, nome in [(df_cad, "cadastro"), (df_fin, "financiamentos"), (df_ev, "eventos")]:
-        df.columns = df.columns.str.replace("\ufeff", "", regex=False)
-    df_cad = limpar_chave(df_cad, "chassi_id_sintetico")
-    df_fin = limpar_chave(df_fin, "chassi_id_sintetico")
-    df_fin = limpar_chave(df_fin, "id_proposta")
-    df_ev = limpar_chave(df_ev, "id_proposta")
-
+    df_cad, df_fin, df_ev = carregar_bases()
     print(f"  cadastro: {df_cad.shape} | financiamentos: {df_fin.shape} | eventos: {df_ev.shape}")
 
     # Eventos
