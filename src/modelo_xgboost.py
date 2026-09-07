@@ -21,6 +21,7 @@ from xgboost import XGBClassifier
 REPO_ROOT = Path(__file__).resolve().parent.parent
 INPUT_PATH = REPO_ROOT / "output" / "vrum_timeline_completa.csv"
 EVENTS_PATH = REPO_ROOT / "docs" / "eventos_target_chassi_90d.csv"
+CADASTRO_PATH = REPO_ROOT / "docs" / "cadastro_chassi_mock.csv"
 OUTPUT_DIR = REPO_ROOT / "output"
 
 TARGET = "target_risco_90d"
@@ -84,6 +85,7 @@ def carregar_base(
                 "data_hora_proposta",
                 "chassi_id_sintetico",
                 "if_id_sintetico",
+                "cpf_cnpj_proponente_sintetico",
                 "tipo_proponente",
                 "valor_financiado",
                 "valor_entrada",
@@ -94,6 +96,15 @@ def carregar_base(
         )
         .sort(["chassi_id_sintetico", "data_hora_proposta", "id_proposta"])
     )
+    # FIPE do cadastro: alimenta o LTV na etapa de flags (src/flags_mesa.py);
+    # não entra nas features do modelo.
+    cadastro = pl.read_csv(
+        CADASTRO_PATH,
+        separator=";",
+        null_values=[""],
+        infer_schema_length=10_000,
+    ).select(["chassi_id_sintetico", "valor_fipe_referencia"])
+    propostas = propostas.join(cadastro, on="chassi_id_sintetico", how="left")
     if not caminho_eventos.exists():
         raise FileNotFoundError(
             f"Fonte original do target não encontrada: {caminho_eventos}"

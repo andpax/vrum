@@ -14,9 +14,11 @@ histórico em indicadores explicáveis (velocidade de trocas, permanência de
 posse, alternância PF/PJ, entre outros) e alimenta um modelo XGBoost com split
 temporal, cujo score sustenta uma política operacional de três zonas:
 **APROVAR**, **INVESTIGAR** (mesa de análise manual) e **BLOQUEAR**
-(desabilitado por padrão). A prioridade da mesa é orientada por flags de regras
-definidas em `docs/flags_para_mesa.txt`, sempre calculadas sem usar dados
-futuros (anti-leakage).
+(desabilitado por padrão). A etapa final gera o dataset por proposta com
+score e as 13 flags de `docs/flags_para_mesa.txt` (`output/vrum_propostas_flags.csv`),
+base do dashboard diário da mesa: fila de investigação priorizada por
+evidências. Limites P90/P95 são sempre calculados sem usar dados futuros
+(anti-leakage).
 
 ## 2. Pré-requisitos e instalação
 
@@ -57,8 +59,10 @@ vrum/
 │   │                                   # temporais + dataset de modelagem por chassi
 │   ├── modelo_xgboost.py               # PIPELINE 2/3: features só com passado,
 │   │                                   # split temporal 30d, treino XGBoost, métricas
-│   ├── politica_operacional_vrum.py    # PIPELINE 3/3: score por safra, zonas
+│   ├── politica_operacional_vrum.py    # PIPELINE 3/4: score por safra, zonas
 │   │                                   # APROVAR/INVESTIGAR/BLOQUEAR, estabilidade por IF
+│   ├── flags_mesa.py                   # PIPELINE 4/4: dataset por proposta com
+│   │                                   # score + 13 flags + zona (base do dashboard)
 │   ├── ordenacao_cronologica_chassi.py # APOIO: entregável canônico da timeline
 │   │                                   # (long CSV + JSON por chassi + sumário)
 │   ├── pipeline_eventos.py             # APOIO: EDA de sanidade (duplicatas, órfãos)
@@ -79,7 +83,7 @@ vrum/
 
 ## 4. Ordem de execução do pipeline (passo a passo)
 
-O pipeline principal tem 3 etapas obrigatórias, nesta ordem — cada uma consome
+O pipeline principal tem 4 etapas obrigatórias, nesta ordem — cada uma consome
 a saída da anterior em `output/`:
 
 ```bash
@@ -98,6 +102,10 @@ python src/modelo_xgboost.py
 #    gera output/politica_zonas_vrum.csv, estabilidade_safra_if_vrum.csv,
 #           output/limiares_politica_vrum.csv
 python src/politica_operacional_vrum.py
+
+# 4. Flags para a mesa: dataset por proposta (base do dashboard)
+#    gera output/vrum_propostas_flags.csv e output/limiares_flags_mesa.csv
+python src/flags_mesa.py
 
 # Testes de regressão (não grava artefatos)
 python -m unittest discover -s tests
@@ -122,6 +130,8 @@ python src/vrum_split_temporal.py            # demonstração do split (dados si
 | `politica_zonas_vrum.csv` | Volumetria, captura de risco e exposição por zona/safra |
 | `estabilidade_safra_if_vrum.csv` | AUC/PR-AUC e taxas de zona por safra e IF |
 | `limiares_politica_vrum.csv` | Limiares de INVESTIGAR/BLOQUEAR (quantis da validação) |
+| `vrum_propostas_flags.csv` | **Base do dashboard**: por proposta, score + 13 flags + `qtd_sinais_mesa` + `zona_decisao`, fila já priorizada |
+| `limiares_flags_mesa.csv` | Limites P90/P95 (treino) usados nas flags, para auditoria |
 
 ## 5. Exemplos de uso (entrada e saída esperada)
 
@@ -146,6 +156,21 @@ regra,quantil_validacao,limiar_score
 investigar,0.95,0.5499
 bloquear,0.99,0.5962
 ```
+
+**Base do dashboard da mesa** (`python src/flags_mesa.py` — última execução):
+
+```
+propostas: 2.129.214 | INVESTIGAR: 188.687 (8,9%) | APROVAR: 1.940.527
+fila já ordenada: zona -> qtd_sinais_mesa -> exposição+LTV -> valor -> score
+```
+
+Cada linha de `output/vrum_propostas_flags.csv` traz: identificação da
+proposta (id, chassi, IF, proponente, data), `score_modelo`, `safra`,
+features históricas, as 13 flags, `qtd_sinais_mesa` e `zona_decisao`.
+Zona = score >= limiar da validação OU (histórico insuficiente E exposição
+alta); as flags são evidência para o analista e ordenam a fila — não são
+gatilho de zona (nesta base sintética o acionamento delas não discrimina
+risco; ver docstring de `src/flags_mesa.py`).
 
 Proposta com score 0,80 no OOT: zona **BLOQUEAR** pela política; como a AUC OOT
 está ~0,5, a regra vigente da mesa é **não aplicar bloqueio automático** — o
@@ -176,7 +201,8 @@ python src/ordenacao_cronologica_chassi.py
 |---|---|---|
 | `FileNotFoundError: .../docs/financiamentos_chassi_2026_01.csv` | CSVs brutos ausentes em `docs/` (não vão no git) | Obter os 5 CSVs e copiá-los para `docs/` |
 | `MemoryError` / lentidão extrema | Bases somam ~2,1M propostas + timeline de ~515MB | Fechar outros processos; rodar etapa por etapa; usar máquina com ≥8GB RAM |
-| `FileNotFoundError: modelo_xgboost_vrum.json` ao rodar a política | Etapa 2 ainda não executada | Executar `python src/modelo_xgboost.py` primeiro |
+| `FileNotFoundError: modelo_xgboost_vrum.json` ao rodar a política ou `flags_mesa.py` | Etapa 2 ainda não executada | Executar `python src/modelo_xgboost.py` primeiro |
+| `flags_mesa.py` falha em `LIMIARES_POLITICA_PATH` | Etapa 3 ainda não executada | Executar `python src/politica_operacional_vrum.py` primeiro |
 | Métricas/política com AUC OOT ~0,5 | Comportamento esperado nesta base sintética | Não habilitar BLOQUEAR; usar flags para triagem (ver `docs/flags_para_mesa.txt`) |
 | Últimos dígitos de somas (`exposicao_total`, `saving_*`) variam entre execuções | Soma float paralela no `group_by` do polars (ULP) | Esperado; não é bug |
 | `ModuleNotFoundError: numpy` | Python do sistema (3.14) sem deps | Usar o env `vrum` (conda) ou o `.venv` criado na seção 2 |

@@ -76,8 +76,8 @@ Transferências sucessivas de chassi podem antecipar o financiamento e dificulta
 ## Pipeline (ordem de execução)
 
 ```
-docs/*.csv  →  src/montagem_inicial.py  →  src/modelo_xgboost.py  →  src/politica_operacional_vrum.py
-              (timeline + features)       (split 30d + XGBoost)      (zonas + estabilidade)
+docs/*.csv  →  src/montagem_inicial.py  →  src/modelo_xgboost.py  →  src/politica_operacional_vrum.py  →  src/flags_mesa.py
+              (timeline + features)       (split 30d + XGBoost)      (zonas + estabilidade)              (dataset p/ dashboard)
 ```
 
 Scripts de apoio (fora do pipeline principal):
@@ -102,6 +102,9 @@ python src/modelo_xgboost.py
 
 # 3. Política operacional (gera output/politica_zonas_vrum.csv)
 python src/politica_operacional_vrum.py
+
+# 4. Flags para a mesa (gera output/vrum_propostas_flags.csv — base do dashboard)
+python src/flags_mesa.py
 
 # Testes
 python -m unittest discover -s tests

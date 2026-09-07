@@ -8,3 +8,5 @@ xgboost==3.4.1
 # Notebooks de EDA (Jupyter)
 matplotlib==3.11.1
 ipykernel==7.3.0
+
+streamlit>=1.40,<2
