@@ -15,13 +15,16 @@ Instruções para sessões OpenCode no repositório `vrum`.
 
 ## Pipeline (ordem obrigatória)
 ```
-docs/*.csv → src/montagem_inicial.py → src/modelo_xgboost.py → src/politica_operacional_vrum.py
+docs/*.csv → src/montagem_inicial.py → src/modelo_xgboost.py → src/politica_operacional_vrum.py → src/flags_mesa.py
 ```
 - Carga compartilhada dos 5 CSVs brutos: `src/vrum_io.py` (DATA_DIR = `docs/`).
 - Apoio (fora do pipeline principal): `ordenacao_cronologica_chassi.py`
   (entregável cronológico + JSON), `pipeline_eventos.py` (EDA de sanidade),
   `vrum_split_temporal.py` (demonstrativo), `vrum_decision_engine.py`
   (motor de flags em pandas; contrato de entrada na docstring).
+- `flags_mesa.py` gera `output/vrum_propostas_flags.csv` (base do dashboard
+  da mesa: score + 13 flags + zona). Zona por score + hist/exp; flags são
+  evidência/priorização, não gatilho (desvio da doc, ver docstring).
 - Manual de uso: `docs/manual_uso_vrum.md`.
 
 ## Layout

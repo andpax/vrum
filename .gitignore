@@ -78,6 +78,10 @@ target/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# Dashboard local database
+/dashboard/data/*.sqlite
+/dashboard/data/*.sqlite-*
+
 # IPython
 profile_default/
 ipython_config.py
