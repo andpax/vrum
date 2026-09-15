@@ -194,9 +194,9 @@ def main() -> None:
     )
 
     OUTPUT_DIR.mkdir(exist_ok=True)
-    resumo.write_csv(OUTPUT_DIR / "politica_zonas_vrum.csv")
-    estabilidade.write_csv(OUTPUT_DIR / "estabilidade_safra_if_vrum.csv")
-    limiares.write_csv(OUTPUT_DIR / "limiares_politica_vrum.csv")
+    resumo.write_csv(OUTPUT_DIR / "politica_zonas_vrum.csv", separator=";")
+    estabilidade.write_csv(OUTPUT_DIR / "estabilidade_safra_if_vrum.csv", separator=";")
+    limiares.write_csv(OUTPUT_DIR / "limiares_politica_vrum.csv", separator=";")
 
     print("Limiar de investigação:", f"{limiar_investigar:.6f}")
     print("Limiar de bloqueio:", f"{limiar_bloquear:.6f}")

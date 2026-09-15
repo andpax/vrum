@@ -336,9 +336,9 @@ def main() -> None:
 
     OUTPUT_DIR.mkdir(exist_ok=True)
     modelo.save_model(OUTPUT_DIR / "modelo_xgboost_vrum.json")
-    metricas.write_csv(OUTPUT_DIR / "metricas_xgboost_vrum.csv")
-    importancia.write_csv(OUTPUT_DIR / "importancia_xgboost_vrum.csv")
-    resumo_split.write_csv(OUTPUT_DIR / "split_temporal_30d_vrum.csv")
+    metricas.write_csv(OUTPUT_DIR / "metricas_xgboost_vrum.csv", separator=";")
+    importancia.write_csv(OUTPUT_DIR / "importancia_xgboost_vrum.csv", separator=";")
+    resumo_split.write_csv(OUTPUT_DIR / "split_temporal_30d_vrum.csv", separator=";")
 
     print("Split temporal de 30 dias:")
     print(resumo_split)

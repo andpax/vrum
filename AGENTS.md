@@ -21,10 +21,16 @@ docs/*.csv → src/montagem_inicial.py → src/modelo_xgboost.py → src/politic
 - Apoio (fora do pipeline principal): `ordenacao_cronologica_chassi.py`
   (entregável cronológico + JSON), `pipeline_eventos.py` (EDA de sanidade),
   `vrum_split_temporal.py` (demonstrativo), `vrum_decision_engine.py`
-  (motor de flags em pandas; contrato de entrada na docstring).
+  (motor de flags em pandas; contrato de entrada na docstring),
+  `comparativo_arvore_flags.py` (experimento: árvore sobre flags vs score),
+  `comparativo_modelos.py` (benchmark: 6 modelos na mesma base/split).
 - `flags_mesa.py` gera `output/vrum_propostas_flags.csv` (base do dashboard
   da mesa: score + 13 flags + zona). Zona por score + hist/exp; flags são
   evidência/priorização, não gatilho (desvio da doc, ver docstring).
+- Dashboard: `dashboard/app.py` (Streamlit — `streamlit run dashboard/app.py`).
+  Design e princípios em `docs/design_mesa_vrum.md` (flags = evidência, nunca
+  confirmação de fraude; vermelho nunca para proposta).
+- Artefatos CSV do repo usam separador `;` (padrão das bases brutas).
 - Manual de uso: `docs/manual_uso_vrum.md`.
 
 ## Layout
@@ -32,7 +38,8 @@ docs/*.csv → src/montagem_inicial.py → src/modelo_xgboost.py → src/politic
 - `notebooks/` — EDA e experimentos (Jupyter; espelham/refinam os scripts src).
 - `output/` — artefatos gerados (gitignored; ~500MB).
 - `docs/` — documentação + dados brutos (5 CSVs, ~400MB, gitignored).
-- `data/`, `dashboard/`, `presentation/` — reservados (vazios).
+- `dashboard/` — mesa de análise (Streamlit, `app.py`).
+- `data/`, `presentation/` — reservados (vazios).
 
 ## Ambiente e tooling
 - Ambiente: **conda env `vrum`** (Python 3.12). Binário:

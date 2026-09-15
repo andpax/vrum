@@ -214,7 +214,7 @@ def aplicar_flags(base: pl.DataFrame, limiares: dict[str, float]) -> pl.DataFram
         else pl.col("indice_rotatividade_vrum") >= p95_index
     )
     limiar_investigar = float(
-        pl.read_csv(LIMIARES_POLITICA_PATH)
+        pl.read_csv(LIMIARES_POLITICA_PATH, separator=";")
         .filter(pl.col("regra") == "investigar")["limiar_score"][0]
     )
 
