@@ -85,6 +85,8 @@ Scripts de apoio (fora do pipeline principal):
 - `src/pipeline_eventos.py` — EDA de sanidade das bases
 - `src/vrum_split_temporal.py` — split temporal demonstrativo com dados simulados
 - `src/vrum_decision_engine.py` — motor de flags/zona em pandas (contrato de entrada na docstring)
+- `src/comparativo_arvore_flags.py` — experimento: árvore de decisão sobre as flags vs. score (conclusão: sem ganho nesta base)
+- `src/comparativo_modelos.py` — benchmark de 6 modelos (Dummy a XGBoost) na mesma base/split (conclusão: algoritmo irrelevante nesta base)
 
 Manual completo de uso: [`docs/manual_uso_vrum.md`](docs/manual_uso_vrum.md).
 
@@ -106,13 +108,23 @@ python src/politica_operacional_vrum.py
 # 4. Flags para a mesa (gera output/vrum_propostas_flags.csv — base do dashboard)
 python src/flags_mesa.py
 
+# Dashboard da mesa de análise (Streamlit, porta 8523)
+streamlit run dashboard/app.py --server.port 8523
+
 # Testes
 python -m unittest discover -s tests
 ```
 
 Dados brutos (5 CSVs, ~400MB) ficam em `docs/` e não são commitados (ver `.gitignore`).
 
+### Dashboard da mesa de análise
+
+- `dashboard/app.py` (Streamlit): fila operacional priorizada, evidências por proposta,
+  timeline do chassi, panorama de sinais/score/exposição
+- Design documentado em `docs/design_mesa_vrum.md`
+
 ## Trabalho futuro
 
 - **Camada LLM/RAG** (LangChain, ChromaDB, sentence-transformers): consulta conversacional da linha do tempo de um chassi para a mesa de análise. Ainda não implementada; arquitetura prevista como camada de leitura sobre os artefatos de `output/`.
-- Dashboard "Perfil de Propriedade" (suspeitos x legítimos) em `dashboard/`.
+- Registro da decisão do analista (fechar o loop de avaliação da mesa)
+- Recalibração com dados reais e target maturado

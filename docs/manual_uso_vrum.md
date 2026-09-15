@@ -69,14 +69,20 @@ vrum/
 │   ├── vrum_split_temporal.py          # APOIO: split temporal demonstrativo (mock)
 │   └── vrum_decision_engine.py         # APOIO: motor de flags/zona em pandas
 │                                       # (contrato de entrada na docstring)
+│   └── comparativo_arvore_flags.py     # APOIO: experimento árvore sobre flags
+│                                       # vs score (sem ganho nesta base)
+│   └── comparativo_modelos.py          # APOIO: benchmark de 6 modelos na
+│                                       # mesma base/split (AUC OOT ~ 0,5)
 ├── tests/
 │   └── test_vrum_pipeline.py           # unittest: target, features, split, flags
 ├── notebooks/                          # EDA e experimentos (espelham os scripts src)
+├── dashboard/                          # mesa de análise (Streamlit)
+│   └── app.py                          # fila priorizada, evidências, timeline
 ├── docs/                               # dados brutos (gitignored) + documentação
 │   ├── flags_para_mesa.txt             # regras de negócio da mesa de análise
+│   ├── design_mesa_vrum.md             # design da mesa de análise
 │   └── manual_uso_vrum.md              # este manual
 ├── output/                             # artefatos gerados (gitignored)
-├── dashboard/                          # reservado (trabalho futuro)
 ├── data/                               # reservado (vazio)
 └── presentation/                       # reservado (materiais acadêmicos)
 ```
@@ -133,7 +139,35 @@ python src/vrum_split_temporal.py            # demonstração do split (dados si
 | `vrum_propostas_flags.csv` | **Base do dashboard**: por proposta, score + 13 flags + `qtd_sinais_mesa` + `zona_decisao`, fila já priorizada |
 | `limiares_flags_mesa.csv` | Limites P90/P95 (treino) usados nas flags, para auditoria |
 
-## 5. Exemplos de uso (entrada e saída esperada)
+## 5. Dashboard da mesa de análise
+
+**Requisito:** etapa 4 do pipeline executada (`output/vrum_propostas_flags.csv`).
+
+```bash
+streamlit run dashboard/app.py
+```
+
+O que a mesa mostra (design completo em `docs/design_mesa_vrum.md`):
+
+- **KPIs**: propostas na mesa, % da carteira (≈ 8,9%), exposição da fila,
+  exposição+LTV altos, histórico insuficiente
+- **Proposta de financiamento** como tela inicial: seleção proposta a proposta, score,
+  exposição, FIPE, LTV, total de flags, status de 45 dias, histórico financeiro
+  e propostas do mesmo chassi; inclui busca direta, navegação anterior/próxima
+  e checklist local de investigação; mostra também marca, ano-modelo, placa,
+  UF de registro, UF da proposta, canal, PF/PJ, IF, entrada e prazo; flags
+  acionadas mostram valor observado, limiar, janela e motivo de atenção
+- **Triagem**: fila operacional na ordenação oficial (sinais, exposição+LTV,
+  valor, score), com prioridade P1/P2/P3 e motivo do encaminhamento
+- **Panorama**: sinais mais acionados, distribuição de score com limiar,
+  pareto da exposição
+- **Nota metodológica** permanente: sinais priorizam a análise — não
+  representam confirmação de fraude (AUC OOT ≈ 0,5 na base atual)
+
+Filtros: safra, IF, UF, canal, tipo de proponente, faixa de valor, LTV ≥ P90,
+histórico insuficiente, evidências específicas, busca livre.
+
+## 6. Exemplos de uso (entrada e saída esperada)
 
 **Execução típica da etapa 2** (`python src/modelo_xgboost.py`) — saída no
 console (valores da última execução; a base é sintética e o desempenho OOT é
@@ -195,7 +229,7 @@ python src/ordenacao_cronologica_chassi.py
 }
 ```
 
-## 6. Troubleshooting básico
+## 7. Troubleshooting básico
 
 | Problema | Causa provável | Solução |
 |---|---|---|
