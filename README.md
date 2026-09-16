@@ -33,7 +33,7 @@ Verificação de Risco e Uso de Motores
 | **Aldine Correia** | [github.com/aldinecorreia](https://github.com/aldinecorreia) |
 | **Anderson Paixão** | [github.com/andpax](https://github.com/andpax) |
 | **Katherine Lacerda** | [github.com/kathlacerda](https://github.com/kathlacerda) |
-| **Laura Mendes Marinho** | [GitHub](https://github.com/alaruma) |
+| **Laura Mendes Marinho** | [gituub.com/alaruma](https://github.com/alaruma) |
 | **Nayara Ramos** | [github.com/nay-ramos](https://github.com/nay-ramos) |
 | **Yuri Henrique** | [github.com/yuridevnba](https://github.com/yuridevnba) |
 
