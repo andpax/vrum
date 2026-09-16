@@ -9,6 +9,37 @@ Verificação de Risco e Uso de Motores
 
 ---
 
+<div align="center">
+
+### 🎓 Instituição Executora
+
+<img src="docs/assets/logo-cesar-school.png" alt="Cesar School" height="90">
+
+&nbsp;&nbsp;&nbsp;
+
+### 🤝 Parceiro
+
+<img src="docs/assets/logo-trillia.png" alt="Trillia — um negócio [B]³" height="90">
+
+<br>
+
+**Curso:** Residência Tecnológica em Análise de Dados e IA — 2026
+
+</div>
+
+### 👥 Participantes
+
+| Participante | GitHub |
+|---|---|
+| **Aldine Correia** | [github.com/aldinecorreia](https://github.com/aldinecorreia) |
+| **Anderson Paixão** | [github.com/andpax](https://github.com/andpax) |
+| **Katherine Lacerda** | [github.com/kathlacerda](https://github.com/kathlacerda) |
+| **Laura Mendes Marinho** | [GitHub](https://github.com/??????) |
+| **Nayara Ramos** | [github.com/nay-ramos](https://github.com/nay-ramos) |
+| **Yuri Henrique** | [github.com/yuridevnba](https://github.com/yuridevnba) |
+
+---
+
 ## 📌 Sobre o projeto
 Analisar dados históricos para interpretar a história da propriedade de veículos financiados em busca de padrões de negociação, por meio do CHASSI do veículo, para identificar possíveis tentativas de fraude em uma transação. Para isso, transformamos a linha do tempo bruta de propriedade de cada chassi em indicadores explicáveis.
 
