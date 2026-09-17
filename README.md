@@ -11,15 +11,18 @@ Verificação de Risco e Uso de Motores
 
 <div align="center">
 
-### 🎓 Instituição Executora
-
-<img src="docs/assets/logo-cesar-school.png" alt="Cesar School" height="90">
-
-&nbsp;&nbsp;&nbsp;
-
-### 🤝 Parceiro
-
-<img src="docs/assets/logo-trillia.png" alt="Trillia — um negócio [B]³" height="90">
+<table>
+  <tr>
+    <td align="center">
+      <h3>🎓 Instituição Executora</h3>
+      <img src="docs/assets/logo-cesar-school.png" alt="Cesar School" height="90">
+    </td>
+    <td align="center">
+      <h3>🤝 Parceiro</h3>
+      <img src="docs/assets/logo-trillia.png" alt="Trillia — um negócio [B]³" height="90">
+    </td>
+  </tr>
+</table>
 
 <br>
 
