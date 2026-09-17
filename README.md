@@ -9,7 +9,9 @@ Verificação de Risco e Uso de Motores
 
 ---
 
-<table style="display: none;">
+<div align="center">
+
+<table>
   <tr>
     <td align="center">
       <h3>🎓 Instituição Executora</h3>
@@ -21,6 +23,8 @@ Verificação de Risco e Uso de Motores
     </td>
   </tr>
 </table>
+
+<br>
 
 **Curso:** Residência Tecnológica em Análise de Dados e IA — 2026
 
